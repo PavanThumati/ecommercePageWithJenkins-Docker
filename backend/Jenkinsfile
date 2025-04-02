@@ -16,12 +16,12 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 // Navigate to the backend directory and build the Docker image
-                dir('backend') {
+                //dir('backend') {
                     script {
                         // Build the Docker image with the dynamically set tag
-                        sh "docker build -f Dockerfile -t ${REGISTRY}:${DOCKER_TAG} ."
+                        sh "docker build -f backend/Dockerfile -t ${REGISTRY}:${DOCKER_TAG} ."
                     }
-                }
+                //}
             }
         }
 
