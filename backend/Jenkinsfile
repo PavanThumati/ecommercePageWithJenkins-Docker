@@ -19,7 +19,7 @@ pipeline {
                 dir('backend') {
                     script {
                         // Build the Docker image with the dynamically set tag
-                        sh "docker build -t ${REGISTRY}:${DOCKER_TAG} ."
+                        sh "docker build -f backend/Dockerfile -t ${REGISTRY}:${DOCKER_TAG} ."
                     }
                 }
             }
