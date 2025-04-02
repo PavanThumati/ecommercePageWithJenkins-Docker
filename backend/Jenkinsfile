@@ -1,38 +1,72 @@
 pipeline {
     agent any
-       environment {
-    DOCKER_CREDENTIALS = 'DockerHubCredentials'
-       }
+    environment {
+        DOCKER_IMAGE = 'my-ecommerce'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        REGISTRY = 'pavanthumati/my-ecommerce'
+    }
     stages {
-        stage('Clone Repository') {
+        stage('Checkout Code') {
             steps {
+                // Clone the GitHub repository
                 git branch: 'main', url: 'https://github.com/PavanThumati/ecommercePageWithJenkins-Docker.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t pavanthumati/ecommerce-backend:latest backend/'
-            }
-        }
-
-       stage('Push to Docker Hub') {
-    steps {
-        script {
-            withCredentials([usernamePassword(credentialsId: DOCKER_CREDENTIALS, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                // Login securely using --password-stdin
-                sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-
-                    sh 'docker push pavanthumati/ecommerce-backend:latest'
+                // Navigate to the backend directory and build the Docker image
+                dir('backend') {
+                    script {
+                        // Build the Docker image with the dynamically set tag
+                        sh "docker build -t ${REGISTRY}:${DOCKER_TAG} ."
+                    }
                 }
             }
         }
-       }
 
-        stage('Deploy') {
+        stage('Push to Docker Hub') {
             steps {
-                sh 'docker run -d -p 5000:5000 pavanthumati/ecommerce-backend:latest'
+                // Push the Docker image to Docker Hub using Jenkins credentials
+                script {
+                    // Correct URL for Docker Hub registry
+                withDockerRegistry([credentialsId: 'DockerHubCredentials', url: 'https://index.docker.io/v1/']) {
+                    sh 'docker push $DOCKER_IMAGE'
+                }
             }
+            }
+        }
+
+        stage('Deploy to Local Docker') {
+            steps {
+                // Stop and remove any running container named 'ecommerce'
+                script {
+                    sh """
+                        docker ps -q -f name=ecommerce | xargs -r docker stop
+                        docker ps -a -q -f name=ecommerce | xargs -r docker rm
+                        docker run -d --name ecommerce -p 5000:5000 ${REGISTRY}:${DOCKER_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Test the Application') {
+            steps {
+                // Test the application by making a curl request
+                script {
+                    sh 'curl http://localhost:5000/products'
+                }
+            }
+        }
+    }
+    post {
+        success {
+            // Print success message on successful deployment
+            echo 'Deployment Successful!'
+        }
+        failure {
+            // Print failure message if the pipeline fails
+            echo 'Deployment Failed!'
         }
     }
 }
