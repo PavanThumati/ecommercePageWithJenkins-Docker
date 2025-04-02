@@ -9,7 +9,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 // Clone the GitHub repository
-                git 'https://github.com/PavanThumati/ecommercePageWithJenkins-Docker.git'
+                git url: 'https://github.com/PavanThumati/ecommercePageWithJenkins-Docker.git', branch: 'main'
             }
         }
 
